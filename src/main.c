@@ -41,6 +41,43 @@ void AudioMoth_usbFirmwareDescriptionRequested(uint8_t **firmwareDescriptionPtr)
 void AudioMoth_usbApplicationPacketRequested(uint32_t messageType, uint8_t *transmitBuffer, uint32_t size) { }
 void AudioMoth_usbApplicationPacketReceived(uint32_t messageType, uint8_t *receiveBuffer, uint8_t *transmitBuffer, uint32_t size) { }
 
+
+/* Utility functions for flashing the LEDs */
+
+int flash_length = 250; // milliseconds
+
+void flash_green() {
+	AudioMoth_setGreenLED(true);
+	AudioMoth_delay(flash_length);
+	AudioMoth_setGreenLED(false);
+}
+
+void flash_red() {
+	AudioMoth_setRedLED(true);
+	AudioMoth_delay(flash_length);
+	AudioMoth_setRedLED(false);
+}
+
+void flash_none() {
+	AudioMoth_setRedLED(false);
+	AudioMoth_setGreenLED(false);
+	AudioMoth_delay(flash_length);
+}
+
+void flash_binary_char(unsigned char n) {
+	/* Flash LEDs to display binary representation of n, from highest bit to lowest */
+	for (unsigned char mask = 128; mask != 0; mask = mask/2){
+		bool bit = n & mask;
+		if (bit) {
+			flash_red();
+			flash_none();
+		} else {
+			flash_green();
+			flash_none();
+		}
+	}
+}
+
 /* Main function */
 
 int main(void) {
@@ -61,18 +98,41 @@ int main(void) {
 
     } else {
 
-        /* Flash both LED */
+        /* Flash both LEDs twice to say we're turned on */
 
-        AudioMoth_setBothLED(true);
+    	AudioMoth_setGreenLED(true);
+        AudioMoth_setRedLED(true);
 
-        AudioMoth_delay(100);
+        AudioMoth_delay(3000);
 
-        AudioMoth_setBothLED(false);
+        /* Turn off the watchdog timer because we're going to do a long operation */
+        AudioMoth_stopWatchdog();
 
+        AudioMoth_setRedLED(false);
+        AudioMoth_setGreenLED(false);
+
+        AudioMoth_delay(3000);
+
+        AudioMoth_setGreenLED(true);
+        AudioMoth_setRedLED(true);
+
+        AudioMoth_delay(3000);
+
+        AudioMoth_setRedLED(false);
+        AudioMoth_setGreenLED(false);
+
+        AudioMoth_delay(3000);
+
+        /* Start counting up from 0 and display each number in binary by flashing the LEDs */
+        /* Continue forever when counter wraps around */
+
+    	unsigned char counter = 0;
+
+    	while(true) {
+    		flash_binary_char(counter);
+    		AudioMoth_delay(1000);
+    		++counter;
+    	}
     }
-
-    /* Power down and wake up in one second */
-
-    AudioMoth_powerDownAndWake(1, true);
 
 }
